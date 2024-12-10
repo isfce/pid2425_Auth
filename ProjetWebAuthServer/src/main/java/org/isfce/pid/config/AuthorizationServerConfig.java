@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -60,7 +61,8 @@ public class AuthorizationServerConfig {
 	@Order(2)
 	SecurityFilterChain defaultSecurityFilterChainClient(HttpSecurity http) throws Exception {
 		http.formLogin(Customizer.withDefaults());
-		http.authorizeHttpRequests(c -> c.anyRequest().authenticated());
+		
+		http.authorizeHttpRequests(c-> c.anyRequest().authenticated());
 		return http.build();
 	}
 
@@ -77,7 +79,7 @@ public class AuthorizationServerConfig {
 	        // .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
 	        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
 	        //adapter
-	        .redirectUri("www.isfce.be/authorized")//Spécifie la ou les redirections possibles en cas de succès
+	        .redirectUri("https://www.isfce.be/authorized")//Spécifie la ou les redirections possibles en cas de succès
 	        .scope("email")
 	        .scope("cmd_sandwichs")//scopes demandés par l'application
 	        .scope(OidcScopes.OPENID)
@@ -103,7 +105,8 @@ public class AuthorizationServerConfig {
 			//rajoute le role de l'utilisateur au token
 			claims.claim("role", role);
 			//rajoute l'email de l'utilisateur au token 
-			daoUser.getEmailByUsername(context.getPrincipal().getName()).ifPresent((m)->claims.claim("email", m));
+			var oUser=daoUser.findById(context.getPrincipal().getName());
+			oUser.ifPresent((m)->claims.claim("email", m.getEmail()));
 		};
 	}
 
@@ -143,6 +146,11 @@ public class AuthorizationServerConfig {
 	@Bean
 	AuthorizationServerSettings authorizationServerSettings() {
 		return AuthorizationServerSettings.builder().build();
+	}
+	
+	@Bean
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
 	}
 
 }
